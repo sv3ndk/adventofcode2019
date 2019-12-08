@@ -33,9 +33,9 @@ class Day3Test extends FlatSpec with Matchers {
 
   "applying moves from 0,0" should "provide the expected locations" in {
 
-    println(visitedLocations(Location(0, 0) )(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))))
+    println(path(Location(0, 0) )(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))))
 
-    visitedLocations(Location(0, 0))(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))) should be (Seq(
+    path(Location(0, 0))(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))) should be (Seq(
       // starting location
       Location(0, 0),
 
@@ -52,17 +52,27 @@ class Day3Test extends FlatSpec with Matchers {
       Location(1, 3), Location(0, 3), Location(-1, 3), Location(-2, 3), Location(-3, 3)))
   }
 
-  "example closest intersection distance " should "match" in {
+  "example closest intersection distance (part 1)" should "match" in {
 
-    Day3.closestIntersectionDistance(
+    Day3Parts.closestIntersectionDistance(
       "R75,D30,R83,U83,L12,D49,R71,U7,L72",
       "U62,R66,U55,R34,D71,R55,D58,R83"
     ) should be (159)
 
-    Day3.closestIntersectionDistance(
+    Day3Parts.closestIntersectionDistance(
       "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
       "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
     ) should be (135)
+  }
+
+  "example shortest timing (part 2) " should "match" in {
+    Day3Parts.shortestIntersectionTiming(
+      "R75,D30,R83,U83,L12,D49,R71,U7,L72", "U62,R66,U55,R34,D71,R55,D58,R83"
+    ) should be (610)
+
+    Day3Parts.shortestIntersectionTiming(
+      "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51", "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
+    ) should be (410)
 
   }
 
