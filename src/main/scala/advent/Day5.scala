@@ -5,38 +5,61 @@ import scala.io.Source
 import scala.util.Using
 
 object Day5Part1 extends App {
-  Using(Source.fromFile("src/main/data/day5-program.txt")) {
-    file => Day5.IntCodeComputer.runProgram(
-      Day5.parseProgram(file.getLines().next()),
-      1)    // 8332629
-  }
-}
+  println(s"Advent of code 2019 - Day 5 / part 1:")
+  Day5.IntCodeComputer.execute("src/main/data/day5-program.txt", 1) // 8332629
 
-object Day5Part2 extends App {
-  Using(Source.fromFile("src/main/data/day5-program.txt")) {
-    file => Day5.IntCodeComputer.runProgram(
-      Day5.parseProgram(file.getLines().next()),
-      5)  // 8805067
-  }
+  println(s"Advent of code 2019 - Day 5 / part 2:")
+  Day5.IntCodeComputer.execute("src/main/data/day5-program.txt", 5) // 8805067
 }
-
 
 object Day5 {
 
-  def parseProgram(line: String) = line.split(",").map(Integer.parseInt)
-
   object IntCodeComputer {
 
-    // accessor of a parameter in the program
-    type ParamMode = (Seq[Int], Int) => Int
+    case class State(program: Seq[Int], opPointer: Int, input: Int, output: Seq[Int], isRunning: Boolean) {
 
-    object ParamMode {
+      def this(program: Seq[Int], input: Int) = this(program, 0, input, Nil, true)
 
-      // param order position in the parameter orderof that function, starting at 0
-      def immediateMode(paramPosition: Int): ParamMode = (program, pointer) => program(pointer + paramPosition + 1)
-      def positionMode(paramPosition: Int): ParamMode = (program, pointer) => program(program(pointer+ paramPosition + 1))
+      // move the operation pointer to the specified location
+      def jumpTo(newOpPointer: Int): State = copy(opPointer = newOpPointer)
 
-      def apply(encodedMode: Char, paramPosition: Int): ParamMode =
+      // moves the operation pointer forward
+      def forward(size: Int): State = jumpTo(opPointer + size)
+
+      // adds this to the program output
+      def addOutput(moreOutPut: Int) = copy(output = moreOutPut +: output)
+
+      lazy val stopped = copy(isRunning = false)
+
+      lazy val currentOpCode: Int = program(opPointer)
+
+      // execute the operation at the current op pointer
+      lazy val step: State = Operation(currentOpCode)(this)
+
+      // updates the program by writing the specified values based on writeParamPosition.
+      // writeParamPosition determines the input param containing the address where to write to
+      // (cf "Parameters that an instruction writes to will never be in immediate mode.")
+      def write(writeParamPosition: Int, value: Int): State = {
+        val writePointer = Param.immediateMode(writeParamPosition)(this)
+        copy(program = program.take(writePointer) :+ value :++ program.drop(writePointer + 1))
+      }
+    }
+
+    // accessor of a function parameter in the program
+    type Param = State => Int
+
+    object Param {
+
+      // param order: position among the parameters of the function this parameter belongs to, starting at 0
+      def immediateMode(paramPosition: Int): Param = {
+        case State(program, pointer, _, _, _) => program(pointer + paramPosition + 1)
+      }
+
+      def positionMode(paramPosition: Int): Param = {
+        case State(program, pointer, _, _, _) => program(program(pointer + paramPosition + 1))
+      }
+
+      def apply(encodedMode: Char, paramPosition: Int): Param =
         encodedMode match {
           case '0' => positionMode(paramPosition)
           case '1' => immediateMode(paramPosition)
@@ -44,122 +67,58 @@ object Day5 {
         }
     }
 
-    case class InputState(program: Seq[Int], opPointer: Int, input: Int) {
-      // no operation => just jumps the pointer to the next operation
-      def noop(paramNumber: Int): OutputState = OutputState(program, opPointer + paramNumber + 1)
-      def jumpTo(newOpPointer: Int) : OutputState = OutputState(program, newOpPointer)
-    }
-
-    case class OutputState(program: Seq[Int], opPointer: Int)
-
-    // updates the program by writing that value at that location
-    // writeParamPosition determines the input param containing the address where to write to
-    // (cf "Parameters that an instruction writes to will never be in immediate mode.")
-    def write(program: Seq[Int], opPointer: Int, writeParamPosition: Int, value: Int): Seq[Int] = {
-      val writePointer = ParamMode.immediateMode(writeParamPosition)(program, opPointer)
-      program.take(writePointer) :+ value :++ program.drop(writePointer + 1)
-    }
-
-    // step from one program state to another, having access to program input optionally able to specify the output
-    type Operation = InputState => Option[OutputState]
+    // step from one program state to another
+    type Operation = State => State
 
     object Operation {
 
-      // looks up 2 values (by ref or value) and writes their sum at the specified location (always in position mode)
-      case class Addition(term1: ParamMode, term2: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
-          val sum = term1(state.program, state.opPointer) + term2(state.program, state.opPointer)
-          Some(OutputState(write(state.program, state.opPointer, 2, sum), state.opPointer + 4))
-        }
-      }
+      // looks up 2 values and writes their sum at the specified location
+      def addition(val1: Param, val2: Param): Operation =
+        state => state.write(2, val1(state) + val2(state)).forward(4)
 
-      // looks up 2 values (by ref or value) and writes their product at the specified location (always in position mode)
-      case class Multiplication(factor1: ParamMode, factor2: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
-          val product = factor1(state.program, state.opPointer) * factor2(state.program, state.opPointer)
-          Some(OutputState(write(state.program, state.opPointer, 2, product), state.opPointer + 4))
-        }
-      }
+      // looks up 2 values and writes their product at the specified location
+      def multiplication(val1: Param, val2: Param): Operation =
+        state => state.write(2, val1(state) * val2(state)).forward(4)
 
-      // writes the program input  at the specified location (always in position mode)
-      val input: Operation = {
-        case (InputState(program, opPointer, input)) =>
-          Some(OutputState(write(program, opPointer, 0, input), opPointer + 2))
-      }
+      // writes the program input at the specified location
+      val input: Operation = (state: State) => state.write(0, state.input).forward(2)
 
       // looks up a value (by ref or value) and writes it in output
-      case class Output(outputParam: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
-          println(s"[OUTPUT]: ${outputParam(state.program, state.opPointer)}")
-          Some(state.jumpTo(state.opPointer + 2))
-        }
-      }
+      def output(param: Param): Operation = state => state.addOutput(param(state)).forward(2)
 
-      // if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
-      case class JumpIfTrue(param1: ParamMode, param2: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
-          if (param1(state.program, state.opPointer) > 0)
-            Some(state.jumpTo(param2(state.program, state.opPointer)))
-          else
-            Some(state.noop(2))
-        }
-      }
+      def jumpIfTrue(val1: Param, val2: Param): Operation =
+        state => if (val1(state) != 0) state.jumpTo(val2(state)) else state.forward(3)
 
-      // if the first parameter is zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
-      case class JumpIfFalse(param1: ParamMode, param2: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
-          if (param1(state.program, state.opPointer) == 0)
-            Some(state.jumpTo(param2(state.program, state.opPointer)))
-          else
-            Some(state.noop(2))
-        }
-      }
+      def jumpIfFalse(val1: Param, val2: Param): Operation =
+        state => if (val1(state) == 0) state.jumpTo(val2(state)) else state.forward(3)
 
-      // if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
-      case class LessThan(param1: ParamMode, param2: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
+      def lessThan(val1: Param, val2: Param): Operation =
+        state => state.write(2, if (val1(state) < val2(state)) 1 else 0).forward(4)
 
-          val writtenValue =
-            if (param1(state.program, state.opPointer) <  param2(state.program, state.opPointer)) 1
-            else 0
+      def areParamsEqual(val1: Param, val2: Param): Operation =
+        state => state.write(2, if (val1(state) == val2(state)) 1 else 0).forward(4)
 
-          Some(OutputState(write(state.program, state.opPointer,2, writtenValue), state.opPointer + 4))
-        }
-      }
+      val exit: Operation = (state: State) => state.stopped
 
-      // if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
-      case class Equals(param1: ParamMode, param2: ParamMode) extends Operation {
-        def apply(state: InputState): Option[OutputState] = {
-
-          val writtenValue =
-            if (param1(state.program, state.opPointer) == param2(state.program, state.opPointer)) 1
-            else 0
-
-          Some(OutputState(write(state.program, state.opPointer, 2, writtenValue), state.opPointer + 4))
-        }
-      }
-
-
-      val exit: Operation = { _ => None }
-
-      // parses a string into the corresponding operation
+      // determines the Operation c
       def apply(operation: Int): Operation = {
-        val operationString = operation.toString.reverse
+
+        val operationStringRev = operation.toString.reverse
 
         // param modes know how to read a param: immediate mode vs position mode + where the parameter is in the stack
-        val paramModes = operationString.drop(2).padTo(3, '0')
+        val paramModes = operationStringRev.drop(2).padTo(3, '0')
           .zipWithIndex
-          .map{ case(mode, paramPosition) => ParamMode.apply(mode, paramPosition)}
+          .map { case (mode, paramPosition) => Param.apply(mode, paramPosition) }
 
-      operationString.take(2).replace("0", "") match {
-          case "1" => Addition(paramModes(0), paramModes(1))
-          case "2" => Multiplication(paramModes(0), paramModes(1))
+        operationStringRev.take(2).replace("0", "") match {
+          case "1" => addition(paramModes(0), paramModes(1))
+          case "2" => multiplication(paramModes(0), paramModes(1))
           case "3" => input
-          case "4" => Output(paramModes(0))
-          case "5" => JumpIfTrue(paramModes(0), paramModes(1))
-          case "6" => JumpIfFalse(paramModes(0), paramModes(1))
-          case "7" => LessThan(paramModes(0), paramModes(1))
-          case "8" => Equals(paramModes(0), paramModes(1))
+          case "4" => output(paramModes(0))
+          case "5" => jumpIfTrue(paramModes(0), paramModes(1))
+          case "6" => jumpIfFalse(paramModes(0), paramModes(1))
+          case "7" => lessThan(paramModes(0), paramModes(1))
+          case "8" => areParamsEqual(paramModes(0), paramModes(1))
           case "99" => exit
           case _ => throw new RuntimeException(s"unrecognized operation: ${operation}")
         }
@@ -169,18 +128,23 @@ object Day5 {
     /**
      * Entry point of this IntCode computer: execute this program with this input
      */
-    def runProgram(program: Seq[Int], input: Int): OutputState = {
-      @tailrec
-      def loop(prog: Seq[Int], opPointer: Int): OutputState = {
-        val operation = Operation(ParamMode.immediateMode(-1)(prog, opPointer))
+    def applyProgram(program: Seq[Int], input: Int): State = {
 
-        operation(InputState(prog, opPointer, input)) match {
-          case Some(OutputState(updatedProgram, updatedPointer)) => loop(updatedProgram, updatedPointer)
-          case None => OutputState(prog, opPointer)
-        }
+      @tailrec def loop(state: State): State = if (!state.isRunning) state else loop(state.step)
+
+      loop(new State(program, input))
+    }
+
+    def parseProgram(line: String) = line.split(",").map(Integer.parseInt)
+
+    def execute(filepath: String, input: Int): Unit = {
+      Using(Source.fromFile(filepath)) {
+        file =>
+          Day5.IntCodeComputer
+            .applyProgram(parseProgram(file.getLines().next()), input)
+            .output
+            .foreach(o => println(s"output: $o"))
       }
-
-      loop(program, 0)
     }
   }
 

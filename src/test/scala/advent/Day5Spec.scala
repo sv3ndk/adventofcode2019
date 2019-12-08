@@ -6,76 +6,95 @@ import Day5.IntCodeComputer._
 class Day5Spec extends FlatSpec with Matchers{
 
   "immediate parameter modes" should "read the buffer at the specified location" in {
-    ParamMode.immediateMode(0)(Seq(1,2,3,4,5,6), 0) should be(2)
-    ParamMode.immediateMode(0)(Seq(1,2,3,4,5,6), 1) should be(3)
-    ParamMode.immediateMode(0)(Seq(1,2,3,4,5,6), 2) should be(4)
-    ParamMode.immediateMode(0)(Seq(1,2,3,4,5,6), 3) should be(5)
-    ParamMode.immediateMode(0)(Seq(1,2,3,4,5,6), 4) should be(6)
+    val prog = new State(Seq(1,2,3,4,5,6),12345)
+
+    Param.immediateMode(0)(prog) should be(2)
+    Param.immediateMode(1)(prog) should be(3)
+    Param.immediateMode(2)(prog) should be(4)
+
+    val prog2 = prog.forward(4)
+    Param.immediateMode(0)(prog2) should be(6)
   }
 
   "position parameter modes" should "read the buffer at the specified location" in {
-    ParamMode.positionMode(0)(Seq(1, 2, 3, 4, 5, 6), 0) should be(3)
-    ParamMode.positionMode(0)(Seq(1, 2, 3, 4, 5, 6), 1) should be(4)
-    ParamMode.positionMode(0)(Seq(1, 2, 3, 4, 5, 6), 3) should be(6)
+    val prog = new State(Seq(1,2,3,4,5,6),12345)
+    Param.positionMode(0)(prog) should be(3)
+    Param.positionMode(1)(prog) should be(4)
+    Param.positionMode(2)(prog) should be(5)
   }
 
-//  "parsing valid operations" should "work as expected" in {
-//    Operation(99) should be (Operation.exit)
-//    val a =Operation.Addition(ParamMode.positionMode(0), ParamMode.positionMode(1))
-//
-//    Operation(1) should be (Operation.Addition(ParamMode.positionMode(0), ParamMode.positionMode(1)))
-//    Operation(2) should be (Operation.Multiplication(ParamMode.positionMode(0), ParamMode.positionMode(1)))
-//    Operation(1002) should be (Operation.Multiplication(ParamMode.positionMode(0), ParamMode.immediateMode(1)))
-//    Operation(1101) should be (Operation.Addition(ParamMode.immediateMode(0), ParamMode.immediateMode(1)))
-//  }
-
   "example program from day 2" should "still work here" in {
-    runProgram(Seq (1,0,0,0,99), 0).program should be (Seq(2,0,0,0,99))
+    applyProgram(Seq (1,0,0,0,99), 0).program should be (Seq(2,0,0,0,99))
   }
 
   "example program 2 from day 2" should "still work here" in {
-    runProgram(Seq (2,3,0,3,99), 0).program should be (Seq(2,3,0,6,99))
+    applyProgram(Seq (2,3,0,3,99), 0).program should be (Seq(2,3,0,6,99))
   }
 
   "example program 3 from day 2" should "still work here" in {
-    runProgram(Seq(2,4,4,5,99,0), 0).program should be (Seq(2,4,4,5,99,9801))
+    applyProgram(Seq(2,4,4,5,99,0), 0).program should be (Seq(2,4,4,5,99,9801))
   }
 
   "example program 4 from day 2" should "still work here" in {
-    runProgram(Seq (1,1,1,4,99,5,6,0,99), 0).program should be (Seq(30,1,1,4,2,5,6,0,99))
+    applyProgram(Seq (1,1,1,4,99,5,6,0,99), 0).program should be (Seq(30,1,1,4,2,5,6,0,99))
   }
 
-  "checking if the input is 8" should "terminate ok (no clean output yet...)" in {
-    runProgram(Seq (3,9,8,9,10,9,4,9,99,-1,8), 8).opPointer should be (8)
-    runProgram(Seq (3,9,8,9,10,9,4,9,99,-1,8), 9).opPointer should be (8)
-    runProgram(Seq (3,3,1108,-1,8,3,4,3,99), 8).opPointer should be (8)
-    runProgram(Seq (3,3,1108,-1,8,3,4,3,99), 9).opPointer should be (8)
+  "consider whether the input is equal to 8" should "output 1 (if it is) or 0 (if it is not)." in {
+    val program = Seq(3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8)
+    applyProgram(program, 8).output should be (Seq(1))
+    applyProgram(program, 3).output should be (Seq(0))
+    applyProgram(program, 13).output should be (Seq(0))
   }
 
-  "checking if the input less than 8" should "terminate ok (no clean output yet...)" in {
-    runProgram(Seq (3,9,7,9,10,9,4,9,99,-1,8 ), 4).opPointer should be (8)
-    runProgram(Seq (3,9,7,9,10,9,4,9,99,-1,8 ), 9).opPointer should be (8)
-    runProgram(Seq (3,3,1107,-1,8,3,4,3,99 ), 4).opPointer should be (8)
-    runProgram(Seq (3,3,1107,-1,8,3,4,3,99 ), 9).opPointer should be (8)
+  "consider whether the input is less than 8" should "output 1 (if it is) or 0 (if it is not)." in {
+    val program = Seq(3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8)
+    applyProgram(program, 1).output should be (Seq(1))
+    applyProgram(program, 3).output should be (Seq(1))
+    applyProgram(program, 8).output should be (Seq(0))
+    applyProgram(program, 18).output should be (Seq(0))
   }
 
-  "jumping" should "terminate ok (no clean output yet)" in {
-    runProgram(Seq (3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9), 0).opPointer should be (11)
-    runProgram(Seq (3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9), 5).opPointer should be (11)
-    runProgram(Seq (3,3,1105,-1,9,1101,0,0,12,4,12,99,1,-1,0,1,9), 0).opPointer should be (11)
-    runProgram(Seq (3,3,1105,-1,9,1101,0,0,12,4,12,99,1,-1,0,1,9), 1).opPointer should be (11)
+  "Using immediate mode, consider whether the input is equal to 8" should "output 1 (if it is) or 0 (if it is not)." in {
+    val program = Seq(3,3,1108,-1,8,3,4,3,99)
+    applyProgram(program, 1).output should be(Seq(0))
+    applyProgram(program, 8).output should be(Seq(1))
+    applyProgram(program, 10).output should be(Seq(0))
   }
 
-  "longer program" should "terminate ok (no clean output yet)"in {
-    runProgram(Seq (3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+  "Using immediate mode, consider whether the input is less than 8" should "output 1 (if it is) or 0 (if it is not)." in {
+    val program = Seq(3,3,1107,-1,8,3,4,3,99)
+    applyProgram(program, 1).output should be(Seq(1))
+    applyProgram(program, 8).output should be(Seq(0))
+    applyProgram(program, 8).output should be(Seq(0))
+  }
+
+  "using position mode, some jump tests that take an input, then" should "output 0 if the input was zero or 1 if the input was non-zero:" in {
+    val program = Seq(3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9)
+    applyProgram(program , 0).output should be (Seq(0))
+    applyProgram(program , 10).output should be (Seq(1))
+    applyProgram(program , -10).output should be (Seq(1))
+  }
+
+  "using immediate mode, some jump tests that take an input, then" should "output 0 if the input was zero or 1 if the input was non-zero:" in {
+    val program = Seq(3,3,1105,-1,9,1101,0,0,12,4,12,99,1)
+    applyProgram(program , 0).output should be (Seq(0))
+    applyProgram(program , 10).output should be (Seq(1))
+      applyProgram(program , -10).output should be (Seq(1))
+    }
+
+  "larger example" should "output 999 if the input value is below 8, output 1000 if the input value is equal to 8, or output 1001 if the input value is greater than 8." in {
+    val program = Seq(3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
       1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
-      999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99), 1).opPointer should be (46)
-    runProgram(Seq (3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
-      1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
-      999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99), 8).opPointer should be (46)
-    runProgram(Seq (3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
-      1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
-      999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99), 10).opPointer should be (46)
+      999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99)
+
+    applyProgram(program, 0).output should be(Seq(999))
+    applyProgram(program, -890).output should be(Seq(999))
+    applyProgram(program, 7).output should be(Seq(999))
+
+    applyProgram(program, 8).output should be(Seq(1000))
+
+    applyProgram(program, 9).output should be(Seq(1001))
+    applyProgram(program, 19).output should be(Seq(1001))
   }
 
 
