@@ -33,9 +33,9 @@ class Day3Test extends FlatSpec with Matchers {
 
   "applying moves from 0,0" should "provide the expected locations" in {
 
-    println(path(Location(0, 0) )(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))))
+    println(path(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))))
 
-    path(Location(0, 0))(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))) should be (Seq(
+    path(Seq(GoUp(4), GoRight(2), GoDown(1), GoLeft(5))) should be (Seq(
       // starting location
       Location(0, 0),
 
