@@ -1,18 +1,25 @@
 package advent
 
-import advent.Day4.{containsDoubleDigit, nonDecreasing}
 
 import scala.annotation.tailrec
 
-object Day4Part1 extends App {
+object Day4Parts extends App {
 
   // brute force on that one (I guess we could generate and check less numbers...)
-  val countPart1 = LazyList.range(359282, 820401).count(meetsCriteria)
+  val countPart1 = LazyList.range(359282, 820401).count(meetsCriteriaPart1)
   println(s"Advent of code 2019 - Day 4 / part 1: number of valid passwords: ${countPart1}") // 511
 
-  def meetsCriteria(password: Int): Boolean = {
+  val countPart2 = LazyList.range(359282, 820401).count(meetsCriteriaPart2)
+  println(s"Advent of code 2019 - Day 4 / part 2: number of valid passwords: ${countPart2}") // 316
+
+  def meetsCriteriaPart1(password: Int): Boolean = {
     val passStr = password.toString
-    containsDoubleDigit(passStr) && nonDecreasing(passStr)
+    Day4.containsDoubleDigit(passStr) && Day4.nonDecreasing(passStr)
+  }
+
+  def meetsCriteriaPart2(password: Int): Boolean = {
+    val passStr = password.toString
+    Day4.containsAtLeastOneExactDouble(passStr) && Day4.nonDecreasing(passStr)
   }
 
 }
@@ -37,6 +44,17 @@ object Day4 {
     val digits = password.toSeq.map(digit => Integer.parseInt(digit.toString))
 
     digits.length > 1 && isOk(digits.head, digits.tail)
+  }
+
+  //determines if there is at least one sequence of 2 repeated digits not part of a longer repetition
+  def containsAtLeastOneExactDouble(password: String): Boolean = {
+    @tailrec
+    def atLeastOneExactDouble(part: Seq[Char]): Boolean =
+      part.nonEmpty && (
+        part.takeWhile( _ == part.head).length == 2 || atLeastOneExactDouble(part.dropWhile(_ == part.head))
+      )
+
+    atLeastOneExactDouble(password.toSeq)
   }
 
 }

@@ -25,4 +25,14 @@ class Day4Test extends FlatSpec with Matchers {
     Day4.nonDecreasing("123789") should be (true)
   }
 
+  "exactlyOneDouble" should "accept only repetition of exactly 2" in {
+    Day4.containsAtLeastOneExactDouble("112233") should be (true)
+    Day4.containsAtLeastOneExactDouble("123444") should be (false)
+    Day4.containsAtLeastOneExactDouble("111122") should be (true)
+    Day4.containsAtLeastOneExactDouble("111222") should be (false)
+    Day4.containsAtLeastOneExactDouble("112224") should be (true)
+    Day4.containsAtLeastOneExactDouble("222224") should be (false)
+    Day4.containsAtLeastOneExactDouble("222244") should be (true)
+  }
+
 }
