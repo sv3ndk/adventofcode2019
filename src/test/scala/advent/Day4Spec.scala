@@ -2,7 +2,7 @@ package advent
 
 import org.scalatest.{FlatSpec, Matchers}
 
-class Day4Test extends FlatSpec with Matchers {
+class Day4Spec extends FlatSpec with Matchers {
 
   "containsDoubleDigit" should "detect repetitions" in {
     Day4.containsDoubleDigit("11") should be (true)

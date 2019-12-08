@@ -3,7 +3,7 @@ package advent
 import advent.Day3._
 import org.scalatest.{FlatSpec, Matchers}
 
-class Day3Test extends FlatSpec with Matchers {
+class Day3Spec extends FlatSpec with Matchers {
 
   "parsing examples" should "work as expected" in {
     Day3.asMove("R75") should be (GoRight(75))
