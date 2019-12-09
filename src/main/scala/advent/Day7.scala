@@ -1,50 +1,72 @@
 package advent
 
+
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Using
 
-object Day5Parts extends App {
-  println(s"Advent of code 2019 - Day 5 / part 1:")
-  execute("src/main/data/day5-program.txt", 1) // 8332629
+object Day7Part extends App {
 
-  println(s"Advent of code 2019 - Day 5 / part 2:")
-  execute("src/main/data/day5-program.txt", 5) // 8805067
+  val computer = Day7.IntCodeComputer.parseProgram("src/main/data/day7-amplifier-program.txt")
+  val (phaseSettings, power)  = optimalPhases(computer)
+  println(s"Advent of code 2019 - Day 7 / part 1: $power with settingsr $phaseSettings")
 
-  /**
-   * Entry point of this IntCode computer: execute this program with this input
-   */
-  def execute(filepath: String, input: Int): Unit = {
-    Using(Source.fromFile(filepath)) {
-      file =>
-        Day5.IntCodeComputer
-          .applyProgram(Day5.parseProgram(file.getLines().next()), input)
-          .output
-          .foreach(o => println(s"output: $o"))
-    }
+  // runs that program as many times as there are phase settings, chaining each output to as input for the next amp
+  def chainAmplifiers(amplifierControlSoftware: Seq[Int], phaseSettings: Seq[Int], firstInput: Int): Int = {
+    val intComputer = new Day7.IntCodeComputer(amplifierControlSoftware)
+    phaseSettings.foldLeft(firstInput) { (output, phase) => intComputer.run(phase, output).head }
   }
+
+  // finds the set of phase settings that yield the best thrust power
+  def optimalPhases(amplifierControlSoftware: Seq[Int]): (Seq[Int], Int) = {
+    List(0, 1, 2, 3, 4)
+      .permutations
+      .map(phaseSettings => (phaseSettings, chainAmplifiers(amplifierControlSoftware, phaseSettings, 0)))
+      .reduce((run1, run2) => if (run1._2 > run2._2) run1 else run2)
+  }
+
 }
 
-object Day5 {
+
+object Day7 {
+
+  import advent.Day7.IntCodeComputer.State
 
   /**
-   * 2nd iteration on the initCode computer: this one accepts one input and provides an Seq of outputs.
+   * 3rd iteration on the initCode computer:
+   *
+   * this one accepts a sequence of inputs and provides a Seq of outputs. When an input is read by the program, it is
+   * un-piled from the stack and no longer available
    */
-  object IntCodeComputer {
+  class IntCodeComputer(startProgram: Seq[Int]) {
 
     /**
-     * Entry point of this IntCode computer: execute this program with this input
+     * Main entry point of this IntCode computer: execute this program with this input and provides the output as
+     * return value
      */
-    def applyProgram(program: Seq[Int], input: Int): State = {
-
-      @tailrec def loop(state: State): State = if (!state.isRunning) state else loop(state.step)
-
-      loop(new State(program, input))
+    def run(input: Int*): Seq[Int] = {
+      //      println(s"running with $input")
+      doRun(input: _*).output
     }
 
-    case class State(program: Seq[Int], opPointer: Int, input: Int, output: Seq[Int], isRunning: Boolean) {
+    // verbose output version, for UTs
+    def doRun(input: Int*): State = loop(new State(startProgram, input.toList))
 
-      def this(program: Seq[Int], input: Int) = this(program, 0, input, Nil, true)
+    @tailrec private def loop(state: State): State = if (!state.isRunning) state else loop(state.step)
+  }
+
+  object IntCodeComputer {
+
+    def parseProgram(programLocation: String): Seq[Int] = {
+      Using(Source.fromFile(programLocation)) { file => file.getLines().toSeq.head }
+        .get
+        .split(",").map(Integer.parseInt)
+        .toSeq
+    }
+
+    case class State(program: Seq[Int], opPointer: Int, input: Seq[Int], output: Seq[Int], isRunning: Boolean) {
+
+      def this(program: Seq[Int], input: Seq[Int]) = this(program, 0, input, Nil, true)
 
       // move the operation pointer to the specified location
       def jumpTo(newOpPointer: Int): State = copy(opPointer = newOpPointer)
@@ -68,6 +90,12 @@ object Day5 {
       def write(writeParamPosition: Int, value: Int): State = {
         val writePointer = Param.immediateMode(writeParamPosition)(this)
         copy(program = program.take(writePointer) :+ value :++ program.drop(writePointer + 1))
+      }
+
+      // reads one input from the program (which is then removed and no longer available later)
+      lazy val readInput = {
+        assert(input.nonEmpty, "cannot access input: Empty (not enough argument?)")
+        (input.head, copy(input = input.tail))
       }
     }
 
@@ -106,8 +134,11 @@ object Day5 {
       def multiplication(val1: Param, val2: Param): Operation =
         state => state.write(2, val1(state) * val2(state)).forward(4)
 
-      // writes the program input at the specified location
-      val input: Operation = (state: State) => state.write(0, state.input).forward(2)
+      // consumes one input and writes it in the program at the specified location
+      val input: Operation = (state: State) => {
+        val (consumedInput, updatedState) = state.readInput
+        updatedState.write(0, consumedInput).forward(2)
+      }
 
       // looks up a value (by ref or value) and writes it in output
       def output(param: Param): Operation = state => state.addOutput(param(state)).forward(2)
@@ -150,8 +181,7 @@ object Day5 {
         }
       }
     }
-  }
 
-  def parseProgram(line: String) = line.split(",").map(Integer.parseInt)
+  }
 
 }
