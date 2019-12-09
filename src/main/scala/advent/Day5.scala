@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Using
 
-object Day5Part1 extends App {
+object Day5Parts extends App {
   println(s"Advent of code 2019 - Day 5 / part 1:")
   Day5.IntCodeComputer.execute("src/main/data/day5-program.txt", 1) // 8332629
 
@@ -36,7 +36,7 @@ object Day5 {
       // execute the operation at the current op pointer
       lazy val step: State = Operation(currentOpCode)(this)
 
-      // updates the program by writing the specified values based on writeParamPosition.
+      // updates the program by writing the specified value
       // writeParamPosition determines the input param containing the address where to write to
       // (cf "Parameters that an instruction writes to will never be in immediate mode.")
       def write(writeParamPosition: Int, value: Int): State = {
