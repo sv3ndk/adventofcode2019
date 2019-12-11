@@ -15,7 +15,7 @@ import scala.util.Using
  */
 object Day7Part1 extends App {
 
-  val (phaseSettings, power) = optimalPhases(Day7.day7IntCodeComputer)
+  val (phaseSettings, power) = optimalPhases(Day7.day7Program)
   println(s"Advent of code 2019 - Day 7 / part 1: $power with settings $phaseSettings")
 
   // runs that program as many times as there are phase settings, chaining each output to as input for the next amp
@@ -41,7 +41,7 @@ object Day7Part1 extends App {
  */
 object Day7Part2 extends App {
 
-  val (phaseSettings, power) = optimalPhases(Day7.day7IntCodeComputer)
+  val (phaseSettings, power) = optimalPhases(Day7.day7Program)
   println(s"Advent of code 2019 - Day 7 / part 2: $power with settings $phaseSettings")
 
   // runs the amplifiers in loop, chain them into each other then repeating until one of them is stopped
@@ -87,7 +87,7 @@ object Day7Part2 extends App {
 
 object Day7 {
 
-  val day7IntCodeComputer =
+  val day7Program =
     Using(Source.fromFile("src/main/data/day7-amplifier-program.txt")) { file => file.getLines().toSeq.head }
       .get
       .split(",").map(Integer.parseInt)
@@ -122,7 +122,10 @@ object Day7 {
     // convenience executor, when there is only one input (backward compatibility with old tests)
     def start(input: Int): State = start(Seq(input))
 
-    @tailrec private def loop(state: State): State = if (state.isRunning) loop(state.step) else state
+    @tailrec private def loop(state: State): State = if (state.isRunning) {
+      println(s"program: ${state.program}, pointer ${state.opPointer}, output ${state.output}")
+      loop(state.step)
+    } else state
   }
 
   object IntCodeComputer {
@@ -141,7 +144,7 @@ object Day7 {
       // adds this to the program output
       def addOutput(moreOutPut: Int): State = copy(output = moreOutPut +: output)
 
-      lazy val stopped = copy(isStopped = true)
+      lazy val stopped = copy(isStopped = true, output = output.reverse)
       lazy val paused = copy(isPaused = true)
       lazy val isRunning = !isStopped && !isPaused
 

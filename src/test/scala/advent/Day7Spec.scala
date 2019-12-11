@@ -4,7 +4,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import Day7.IntCodeComputer.{State, _}
 import advent.Day7.IntCodeComputer
 
-class Day7PartSpec extends FlatSpec with Matchers {
+class Day7Spec extends FlatSpec with Matchers {
 
   "(from day5) immediate parameter modes" should "read the buffer at the specified location" in {
     val prog = new State(Seq(1,2,3,4,5,6),List(12345), "rst")
