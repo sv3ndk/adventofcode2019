@@ -6,9 +6,13 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Using
 
-object Day9Parts extends App {
-  val program = Day9.day9Program
-  val boostCode = new Day9.IntCodeComputer(program).start(1).output
+object Day9Part1 extends App {
+  val boostCode = new Day9.IntCodeComputer(Day9.day9Program).start(1).output
+  println(s"Advent of code 2019 - Day 9 / part 1: BOOST code: $boostCode")
+}
+
+object Day9Part2 extends App {
+  val boostCode = new Day9.IntCodeComputer(Day9.day9Program).start(2).output
   println(s"Advent of code 2019 - Day 9 / part 1: BOOST code: $boostCode")
 }
 
