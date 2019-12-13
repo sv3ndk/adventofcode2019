@@ -84,7 +84,6 @@ object Day7Part2 extends App {
 
 }
 
-
 object Day7 {
 
   val day7Program =

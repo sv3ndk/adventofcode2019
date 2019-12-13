@@ -1,56 +1,56 @@
 package advent
 
-import advent.Day9.IntCodeComputer.{Operation, Pointer, State}
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Using
 
 object Day9Part1 extends App {
-  val boostCode = new Day9.IntCodeComputer(Day9.day9Program).start(1).output
-  println(s"Advent of code 2019 - Day 9 / part 1: BOOST code: $boostCode")
+  val boostCode = Day9.IntCodeComputer.start(Day9.day9Program, 1).output
+  println(s"Advent of code 2019 - Day 9 / part 1: BOOST code: $boostCode")  // 3839402290
 }
 
 object Day9Part2 extends App {
-  val boostCode = new Day9.IntCodeComputer(Day9.day9Program).start(2).output
-  println(s"Advent of code 2019 - Day 9 / part 1: BOOST code: $boostCode")
+  val result = Day9.IntCodeComputer.start(Day9.day9Program, 2).output
+  println(s"Advent of code 2019 - Day 9 / part 2:: $result")  // 35734
 }
 
 object Day9 {
 
-  val day9Program =
-    Using(Source.fromFile("src/main/data/day9-program.txt")) { file => file.getLines().toSeq.head }
-      .get
-      .split(",").map(_.toLong)
-      .toSeq
+  val day9Program = loadProgram("src/main/data/day9-program.txt")
+
+  def loadProgram(filePath: String): Seq[Long] = Using(Source.fromFile(filePath)) { file => file.getLines().toSeq.head }
+    .get
+    .split(",").map(_.toLong)
+    .toSeq
 
   /**
    * 4th iteration on the intCode computer: with relative memory access when writing and large memory
    */
-  class IntCodeComputer(startProgram: Seq[Long]) {
+  object IntCodeComputer {
 
-    def start(inputs: Seq[Long], label: String = "noname"): State = {
+    def start(startProgram: Seq[Long], inputs: Seq[Long], label: String = "noname"): State = {
       val memory = Seq.fill(10000)(0L)
       loop(new State(startProgram ++: memory, inputs, label))
     }
 
-    def resume(state: State, input: Seq[Long]): State = {
+    def resume(state: State, input: Int): State = resume(state, Seq(input.longValue()))
+
+    def resume(state: State, inputs: Seq[Long]): State = {
       assert(state.isPaused, "inconsistent state: cannot resume a non paused program")
-      loop(state.unpause(input))
+      loop(state.unpause(inputs))
     }
 
     // (convenience starter, when there is only one input, for backward compatibility with old tests))
-    def start(input: Int): State = start(Seq(input.toLong))
+    def start(startProgram: Seq[Long], input: Int): State = start(startProgram, Seq(input.toLong))
 
     @tailrec private def loop(state: State): State =
       if (state.isRunning) {
-//        println(s"program: ${state.program.take(15)}, pointer ${state.opPointer}, output ${state.output}")
+        //        println(s"program: ${state.program.take(15)}, pointer ${state.opPointer}, output ${state.output}")
         loop(Operation(state.currentOpCode)(state))
       }
       else state
-  }
 
-  object IntCodeComputer {
 
     case class State(program: Seq[Long], opPointer: Int, label: String, relativeBase: Int,
                      input: Seq[Long], output: Seq[Long],
@@ -62,12 +62,13 @@ object Day9 {
 
       def forward(size: Int): State = jumpTo(opPointer + size)
 
-      def addOutput(moreOutPut: Long): State = copy(output = moreOutPut +: output)
+      def addOutput(moreOutPut: Long): State = copy(output = output :+ moreOutPut)
 
-      lazy val stopped = copy(isStopped = true, output = output.reverse) // maybe I should truncate the additional memory here?
+      lazy val stopped = copy(isStopped = true) // maybe I should truncate the additional memory here?
 
       lazy val paused = copy(isPaused = true)
       lazy val isRunning = !isStopped && !isPaused
+
       def unpause(newInputs: Seq[Long]): State = copy(isPaused = false, input = newInputs, output = Nil)
 
       lazy val currentOpCode: Int = program(opPointer).toInt
@@ -164,5 +165,7 @@ object Day9 {
           case _ => throw new RuntimeException(s"unknown parameter mode: $encodedMode")
         }
     }
+
   }
+
 }

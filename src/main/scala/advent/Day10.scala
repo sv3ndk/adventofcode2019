@@ -91,8 +91,8 @@ object Day10 extends App {
   def visibility(reference: Coord, allAsteroids: List[Coord]): Int =
     allAsteroids
       .filter(_ != reference)
-      .map { c => (c, (c - reference).simplified) }
-      .groupBy(_._2)
+      .map { c => (c - reference).simplified }
+      .distinct
       .size
 
   // sequence of "layers" of asteroids that are destroyed one after the other
