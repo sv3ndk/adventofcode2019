@@ -51,5 +51,46 @@ class Day12Test extends FlatSpec with Matchers {
 
   }
 
-}
+  "brute force part 2" should "repeat itelf" in {
+
+    //"Io", "Europa", "Ganymede", "Callisto"
+    val rawMoons =
+      """<x=-1, y=0, z=2>
+        |<x=2, y=-10, z=-7>
+        |<x=4, y=-8, z=8>
+        |<x=3, y=5, z=-1>"""
+        .stripMargin.split("\n").toList
+
+    val moons = Day12.parseMoons(rawMoons)
+
+    Day12.bruteForceStep2bis(moons) should be (2772)
+  }
+
+  "LCM part 2" should "repeat itelf" in {
+
+    //"Io", "Europa", "Ganymede", "Callisto"
+    val rawMoons =
+      """<x=-1, y=0, z=2>
+        |<x=2, y=-10, z=-7>
+        |<x=4, y=-8, z=8>
+        |<x=3, y=5, z=-1>"""
+        .stripMargin.split("\n").toList
+
+    Day12Part2.systemPeriod(rawMoons) should be (2772)
+  }
+
+  "other part 2 example" should "repeat itelf" in {
+
+    //"Io", "Europa", "Ganymede", "Callisto"
+    val rawMoons =
+      """<x=-8, y=-10, z=0>
+        |<x=5, y=5, z=10>
+        |<x=2, y=-7, z=3>
+        |<x=9, y=-8, z=-3>"""
+        .stripMargin.split("\n").toList
+
+    Day12Part2.systemPeriod(rawMoons) should be (4686774924L)
+  }
+
+  }
 
