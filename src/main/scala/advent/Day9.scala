@@ -17,7 +17,7 @@ object Day9Part2 extends App {
 
 object Day9 {
 
-  val day9Program = loadProgram("src/main/data/day9-program.txt")
+  lazy val day9Program = loadProgram("src/main/data/day9-program.txt")
 
   def loadProgram(filePath: String): Seq[Long] = Using(Source.fromFile(filePath)) { file => file.getLines().toSeq.head }
     .get
