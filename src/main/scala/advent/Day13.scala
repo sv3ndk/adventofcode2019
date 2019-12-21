@@ -21,7 +21,6 @@ object Day13Part1 extends App {
   val counted = parsedOutput.groupBy(_._2).view.mapValues(_.size).toMap
 
   println(s"Advent of code 2019 - Day 13 / part 1: number of block tiles: ${counted(Day13.Block)}") // 284
-
 }
 
 
